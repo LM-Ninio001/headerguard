@@ -6,9 +6,9 @@
 
 ## ✨ Planned features
 
-- [ ] Fetch a URL and inspect its security headers
-- [ ] A–F grading with an explanation for every finding
-- [ ] TLS certificate and protocol version checks
+- [x] Fetch a URL and inspect its security headers
+- [x] A–F grading with an explanation for every finding
+- [x] TLS certificate and protocol version checks
 - [ ] Cookie flag analysis (`Secure`, `HttpOnly`, `SameSite`)
 - [ ] CLI with JSON and HTML report output
 - [ ] Visual web dashboard (grade badge, score gauge, header cards)
