@@ -18,6 +18,9 @@ WEIGHTS: dict[str, int] = {
     "X-Content-Type-Options": 10,
     "Referrer-Policy": 5,
     "Permissions-Policy": 5,
+    "HTTPS": 40,
+    "TLS Certificate": 30,
+    "TLS Version": 15,
 }
 DEFAULT_WEIGHT = 3
 

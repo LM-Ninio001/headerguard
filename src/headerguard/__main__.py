@@ -8,6 +8,7 @@ from headerguard import __version__
 from headerguard.fetcher import FetchError, fetch
 from headerguard.grading import grade
 from headerguard.headers import FAIL, PASS, check_headers
+from headerguard.tls import check_tls, inspect
 
 ICONS = {PASS: "[PASS]", "warn": "[WARN]", FAIL: "[FAIL]"}
 
@@ -24,7 +25,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error: {err}", file=sys.stderr)
         return 2
 
-    findings = check_headers(result.headers)
+    findings = check_tls(result.final_url, inspect(result.final_url))
+    findings += check_headers(result.headers)
     summary = grade(findings)
 
     print(f"Scanned {result.final_url} (HTTP {result.status})")
