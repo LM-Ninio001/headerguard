@@ -6,6 +6,7 @@ import sys
 
 from headerguard import __version__
 from headerguard.fetcher import FetchError, fetch
+from headerguard.grading import grade
 from headerguard.headers import FAIL, PASS, check_headers
 
 ICONS = {PASS: "[PASS]", "warn": "[WARN]", FAIL: "[FAIL]"}
@@ -23,8 +24,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error: {err}", file=sys.stderr)
         return 2
 
-    print(f"Scanned {result.final_url} (HTTP {result.status})\n")
-    for finding in check_headers(result.headers):
+    findings = check_headers(result.headers)
+    summary = grade(findings)
+
+    print(f"Scanned {result.final_url} (HTTP {result.status})")
+    print(f"Grade: {summary.letter}   Score: {summary.score}/100   "
+          f"({summary.passed} passed, {summary.warnings} warnings, {summary.failed} failed)\n")
+    for finding in findings:
         print(f"{ICONS[finding.status]} {finding.header:<27} {finding.message}")
         if finding.status != PASS:
             print(f"       fix: {finding.fix}")
