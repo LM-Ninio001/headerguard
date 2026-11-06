@@ -10,7 +10,7 @@
 - [x] A–F grading with an explanation for every finding
 - [x] TLS certificate and protocol version checks
 - [x] Cookie flag analysis (`Secure`, `HttpOnly`, `SameSite`)
-- [ ] CLI with JSON and HTML report output
+- [x] CLI with JSON and HTML report output
 - [ ] Visual web dashboard (grade badge, score gauge, header cards)
 - [ ] Automated tests and CI with GitHub Actions
 
@@ -27,18 +27,59 @@
 
 ## 🚀 Getting started
 
-> Usage instructions will be added as features are built.
-
 ```bash
 git clone https://github.com/LM-Ninio001/headerguard.git
 cd headerguard
 python -m venv .venv
+source .venv/bin/activate      # Windows: .venv\Scripts\activate
+pip install -e .
 ```
+
+## 🖥️ Usage
+
+```bash
+headerguard example.com                  # coloured report in the terminal
+headerguard example.com --json           # machine-readable JSON
+headerguard example.com --html report.html   # save a shareable HTML report
+headerguard example.com --fail-under 75  # exit code 1 if the score is below 75
+```
+
+Example output:
+
+```
+Scanned https://example.com (HTTP 200)
+Grade: C   Score: 62/100   (4 passed, 2 warnings, 3 failed)
+
+[PASS] TLS Version                 Negotiated TLSv1.3
+[PASS] TLS Certificate             Valid for 74 more days (issued by Let's Encrypt)
+[FAIL] Content-Security-Policy     Missing
+       fix: Content-Security-Policy: default-src 'self'; frame-ancestors 'self'
+...
+```
+
+`--fail-under` makes HeaderGuard usable as a check in CI/CD pipelines, so a deployment can be blocked if security headers regress.
+
+## 🧮 How scoring works
+
+Every site starts at 100. Each failed check loses its full weight and each warning loses half:
+
+| Check | Weight |
+|---|---|
+| HTTPS (served over TLS at all) | 40 |
+| TLS certificate valid / not expiring | 30 |
+| Content-Security-Policy | 25 |
+| Strict-Transport-Security | 20 |
+| X-Frame-Options, TLS version | 15 each |
+| X-Content-Type-Options, Cookies | 10 each |
+| Referrer-Policy, Permissions-Policy | 5 each |
+| Version-leaking headers (`Server`, `X-Powered-By`) | 3 each |
+
+Grades: **A** 90+, **B** 75+, **C** 60+, **D** 45+, **E** 30+, **F** below 30.
 
 ## 🧰 Tech stack
 
-- Python 3.10+
-- (coming soon) `requests`, `pytest`, FastAPI, HTML/CSS/JS dashboard
+- Python 3.10+, standard library only (`urllib`, `ssl`, `argparse`)
+- (coming soon) `pytest`, FastAPI, HTML/CSS/JS dashboard
 
 ## 📚 References
 
