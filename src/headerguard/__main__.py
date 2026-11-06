@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 
 from headerguard import __version__
+from headerguard.cookies import check_cookies
 from headerguard.fetcher import FetchError, fetch
 from headerguard.grading import grade
 from headerguard.headers import FAIL, PASS, check_headers
@@ -27,6 +28,7 @@ def main(argv: list[str] | None = None) -> int:
 
     findings = check_tls(result.final_url, inspect(result.final_url))
     findings += check_headers(result.headers)
+    findings += check_cookies(result.set_cookies, result.final_url.startswith("https://"))
     summary = grade(findings)
 
     print(f"Scanned {result.final_url} (HTTP {result.status})")

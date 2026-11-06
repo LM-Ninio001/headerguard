@@ -21,6 +21,7 @@ WEIGHTS: dict[str, int] = {
     "HTTPS": 40,
     "TLS Certificate": 30,
     "TLS Version": 15,
+    "Cookies": 10,
 }
 DEFAULT_WEIGHT = 3
 
