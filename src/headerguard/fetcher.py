@@ -10,6 +10,7 @@ import urllib.error
 import urllib.request
 from dataclasses import dataclass, field
 from email.message import Message
+from typing import Callable
 
 USER_AGENT = "HeaderGuard/0.1 (+https://github.com/LM-Ninio001/headerguard)"
 DEFAULT_TIMEOUT = 10
@@ -52,12 +53,35 @@ def _collect(message: Message) -> tuple[dict[str, str], list[str]]:
     return headers, list(cookies)
 
 
-def fetch(url: str, timeout: float = DEFAULT_TIMEOUT) -> FetchResult:
-    """GET `url` (following redirects) and return status and headers."""
+class _GuardedRedirects(urllib.request.HTTPRedirectHandler):
+    """Runs a check on every redirect target before following it."""
+
+    def __init__(self, guard: Callable[[str], None]):
+        self.guard = guard
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        self.guard(newurl)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def fetch(
+    url: str,
+    timeout: float = DEFAULT_TIMEOUT,
+    guard: Callable[[str], None] | None = None,
+) -> FetchResult:
+    """GET `url` (following redirects) and return status and headers.
+
+    `guard`, if given, is called with the starting URL and every redirect
+    target and should raise to stop the request (used by the web server to
+    block private network addresses).
+    """
     url = normalise_url(url)
+    if guard:
+        guard(url)
+    opener = urllib.request.build_opener(*([_GuardedRedirects(guard)] if guard else []))
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with opener.open(request, timeout=timeout) as response:
             headers, cookies = _collect(response.headers)
             return FetchResult(url, response.geturl(), response.status, headers, cookies)
     except urllib.error.HTTPError as err:

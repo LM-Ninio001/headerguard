@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
+from typing import Callable
 
 from headerguard import __version__
 from headerguard.cookies import check_cookies
@@ -31,9 +32,12 @@ class Report:
         return data
 
 
-def scan(url: str, timeout: float = DEFAULT_TIMEOUT) -> Report:
-    """Fetch `url` once, then run the TLS, header and cookie checks."""
-    result = fetch(url, timeout=timeout)
+def scan(url: str, timeout: float = DEFAULT_TIMEOUT, guard: Callable[[str], None] | None = None) -> Report:
+    """Fetch `url` once, then run the TLS, header and cookie checks.
+
+    `guard` is passed to fetch() to vet the URL and every redirect target.
+    """
+    result = fetch(url, timeout=timeout, guard=guard)
     tls_info = inspect(result.final_url, timeout=timeout)
     findings = check_tls(result.final_url, tls_info)
     findings += check_headers(result.headers)
