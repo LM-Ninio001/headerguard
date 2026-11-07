@@ -63,6 +63,29 @@ Grade: C   Score: 62/100   (4 passed, 2 warnings, 3 failed)
 
 `--fail-under` makes HeaderGuard usable as a check in CI/CD pipelines, so a deployment can be blocked if security headers regress.
 
+## 🌐 Web API
+
+```bash
+pip install -e ".[web]"
+headerguard-web                      # serves http://127.0.0.1:8000
+curl -X POST http://127.0.0.1:8000/api/scan \
+     -H "Content-Type: application/json" -d '{"url": "example.com"}'
+```
+
+Interactive API docs are at `/docs`. Endpoints: `POST /api/scan` (full JSON report) and `GET /api/health`.
+
+### 🔒 Hardening the scanner itself
+
+A tool that fetches any URL a stranger types in is a classic **Server-Side Request Forgery (SSRF)** risk: an attacker could point it at `http://127.0.0.1/admin` or the cloud metadata service at `169.254.169.254` to reach things that are not public. HeaderGuard's server defends against this:
+
+- Every hostname is resolved and **rejected if any address is private, loopback, link-local, carrier-grade NAT, reserved or multicast** (IPv4 and IPv6, including IPv4-mapped IPv6 tricks like `::ffff:127.0.0.1`)
+- **Each redirect is checked too**, so a public site cannot bounce the scanner to an internal address
+- Only ports **80 and 443**, so it cannot be used as a port scanner
+- URLs with embedded credentials are refused, input length is capped, and each network step has an **8-second timeout**
+- An in-memory **rate limit** (10 scans per client per minute, set with `HEADERGUARD_RATE_LIMIT`)
+
+Known limitation: DNS is resolved once for the check and again for the connection, so a DNS-rebinding attacker could in theory switch addresses in between. Pinning the connection to the vetted IP would close this gap.
+
 ## 🧮 How scoring works
 
 Every site starts at 100. Each failed check loses its full weight and each warning loses half:
@@ -84,7 +107,8 @@ Grades: **A** 90+, **B** 75+, **C** 60+, **D** 45+, **E** 30+, **F** below 30.
 
 - Python 3.10+, standard library only (`urllib`, `ssl`, `argparse`)
 - `pytest` (80 offline tests) and GitHub Actions CI
-- (coming soon) FastAPI, HTML/CSS/JS dashboard
+- FastAPI + uvicorn for the web API
+- (coming soon) HTML/CSS/JS dashboard
 
 ## 📚 References
 
