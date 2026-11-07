@@ -1,4 +1,4 @@
-"""HTTP API for HeaderGuard (the dashboard talks to this).
+"""HeaderGuard web app: the visual dashboard at / and the JSON API under /api.
 
 Run with:  headerguard-web            (http://127.0.0.1:8000)
      or:   uvicorn headerguard.web:app --reload
@@ -11,7 +11,11 @@ import threading
 import time
 from collections import defaultdict, deque
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from headerguard import __version__
@@ -55,6 +59,41 @@ class _RateLimiter:
 
 
 limiter = _RateLimiter(RATE_LIMIT, RATE_WINDOW)
+
+STATIC_DIR = Path(__file__).parent / "static"
+
+# HeaderGuard practises what it checks: the dashboard sends every header it grades.
+SECURITY_HEADERS = {
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+}
+DASHBOARD_CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; "
+    "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; "
+    "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+)
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    for name, value in SECURITY_HEADERS.items():
+        response.headers.setdefault(name, value)
+    # Swagger UI at /docs loads its own scripts from a CDN, so it keeps FastAPI's defaults.
+    if not request.url.path.startswith(("/docs", "/openapi.json")):
+        response.headers.setdefault("Content-Security-Policy", DASHBOARD_CSP)
+    return response
+
+
+@app.get("/", include_in_schema=False)
+def dashboard() -> FileResponse:
+    return FileResponse(STATIC_DIR / "index.html")
+
+
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/api/health")

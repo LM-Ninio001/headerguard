@@ -76,3 +76,37 @@ def test_rate_limit(monkeypatch):
     client = TestClient(web.app)
     codes = [client.post("/api/scan", json={"url": "example.com"}).status_code for _ in range(3)]
     assert codes == [200, 200, 429]
+
+
+def test_dashboard_served_with_strict_headers(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "<title>HeaderGuard</title>" in response.text
+    csp = response.headers["content-security-policy"]
+    assert "script-src 'self'" in csp and "frame-ancestors 'none'" in csp
+    assert response.headers["x-frame-options"] == "DENY"
+    assert response.headers["x-content-type-options"] == "nosniff"
+
+
+def test_dashboard_passes_its_own_header_checks(client):
+    from headerguard.headers import PASS, check_headers
+
+    headers = {k.lower(): v for k, v in client.get("/").headers.items()}
+    assert all(f.status == PASS for f in check_headers(headers))
+
+
+def test_static_assets_served(client):
+    for path in ("/static/app.js", "/static/style.css"):
+        assert client.get(path).status_code == 200
+
+
+def test_dashboard_js_never_uses_innerhtml():
+    # Header values come from arbitrary websites, so they must never be parsed as HTML.
+    from pathlib import Path
+
+    js = (Path(web.__file__).parent / "static" / "app.js").read_text(encoding="utf-8")
+    assert "innerHTML" not in js.replace("never innerHTML", "")
+
+
+def test_docs_still_load(client):
+    assert client.get("/docs").status_code == 200

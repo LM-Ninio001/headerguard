@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HeaderGuard</title>
+<meta name="description" content="Grade a website's security headers, HTTPS and cookies from A to F.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
+<link rel="stylesheet" href="/static/style.css">
+<script src="/static/app.js" defer></script>
+</head>
+<body>
+<header class="masthead">
+  <a class="brand" href="/">HeaderGuard</a>
+  <a class="api-link" href="/docs">API docs</a>
+</header>
+
+<main>
+  <section class="intro">
+    <h1>How well is this website defended?</h1>
+    <p>Enter a site to grade its security headers, HTTPS setup and cookies. HeaderGuard only makes the same request a browser would.</p>
+  </section>
+
+  <form id="scan-form" class="scan-form" novalidate>
+    <div class="inputs">
+      <label class="field">
+        <span>Website</span>
+        <input id="url-a" name="url-a" type="text" inputmode="url" autocomplete="url" placeholder="example.com" required>
+      </label>
+      <label class="field" id="field-b" hidden>
+        <span>Compare with</span>
+        <input id="url-b" name="url-b" type="text" inputmode="url" autocomplete="url" placeholder="another-site.com">
+      </label>
+    </div>
+    <div class="actions">
+      <button type="submit" id="scan-btn">Scan</button>
+      <label class="toggle">
+        <input type="checkbox" id="compare-toggle">
+        <span>Compare two sites</span>
+      </label>
+    </div>
+  </form>
+
+  <p id="status" class="status" role="status" aria-live="polite"></p>
+
+  <div id="results" class="results"></div>
+</main>
+
+<footer class="foot">
+  <p>Passive checks only: one page request and one TLS handshake per site. Private and internal addresses are refused.</p>
+</footer>
+
+<template id="result-tpl">
+  <article class="result">
+    <div class="verdict">
+      <div class="dial" aria-hidden="true">
+        <svg viewBox="0 0 220 128">
+          <path class="track" d="M 20 110 A 90 90 0 0 1 200 110" pathLength="100"/>
+          <path class="fill" d="M 20 110 A 90 90 0 0 1 200 110" pathLength="100"/>
+          <g class="ticks"></g>
+          <line class="needle" x1="110" y1="110" x2="110" y2="34"/>
+          <circle class="hub" cx="110" cy="110" r="6"/>
+        </svg>
+        <div class="letter"></div>
+      </div>
+      <div class="summary">
+        <h2 class="site"></h2>
+        <p class="score"><strong class="score-num"></strong> out of 100</p>
+        <ul class="counts">
+          <li class="c-pass"></li>
+          <li class="c-warn"></li>
+          <li class="c-fail"></li>
+        </ul>
+        <p class="meta"></p>
+      </div>
+    </div>
+
+    <section class="tls">
+      <h3>HTTPS certificate</h3>
+      <div class="tls-body"></div>
+    </section>
+
+    <section class="findings">
+      <h3>Checks</h3>
+      <div class="finding-list"></div>
+    </section>
+  </article>
+</template>
+</body>
+</html>
