@@ -8,14 +8,18 @@
 
 > ⚠️ HeaderGuard is a **passive** tool. It only reads the same response any normal browser receives. It does not attack, probe or exploit anything.
 
-## ✨ Planned features
+![HeaderGuard dashboard comparing two sites](docs/dashboard.png)
+<sub>Compare mode in the dashboard. The two sites shown are fictional `.example` domains, graded by HeaderGuard's real checks.</sub>
+
+## ✨ Features
 
 - [x] Fetch a URL and inspect its security headers
 - [x] A–F grading with an explanation for every finding
 - [x] TLS certificate and protocol version checks
 - [x] Cookie flag analysis (`Secure`, `HttpOnly`, `SameSite`)
 - [x] CLI with JSON and HTML report output
-- [ ] Visual web dashboard (grade badge, score gauge, header cards)
+- [x] Visual web dashboard: score dial, check cards, certificate expiry bar and two-site comparison
+- [x] Web API with SSRF protection and rate limiting
 - [x] Automated tests and CI with GitHub Actions
 
 ## 🔍 What it checks
@@ -63,11 +67,18 @@ Grade: C   Score: 62/100   (4 passed, 2 warnings, 3 failed)
 
 `--fail-under` makes HeaderGuard usable as a check in CI/CD pipelines, so a deployment can be blocked if security headers regress.
 
-## 🌐 Web API
+## 📊 Dashboard and web API
 
 ```bash
 pip install -e ".[web]"
-headerguard-web                      # serves http://127.0.0.1:8000
+headerguard-web                      # open http://127.0.0.1:8000 in your browser
+```
+
+The dashboard lets you scan one site or compare two side by side. Each check expands to explain the risk and the exact header to add. It works in light and dark mode and on phones. You can link straight to a scan with `http://127.0.0.1:8000/?url=example.com`.
+
+The same server exposes a JSON API:
+
+```bash
 curl -X POST http://127.0.0.1:8000/api/scan \
      -H "Content-Type: application/json" -d '{"url": "example.com"}'
 ```
@@ -83,6 +94,8 @@ A tool that fetches any URL a stranger types in is a classic **Server-Side Reque
 - Only ports **80 and 443**, so it cannot be used as a port scanner
 - URLs with embedded credentials are refused, input length is capped, and each network step has an **8-second timeout**
 - An in-memory **rate limit** (10 scans per client per minute, set with `HEADERGUARD_RATE_LIMIT`)
+- The dashboard renders every scanned value with `textContent`, never `innerHTML`, so a malicious header cannot inject script into the page
+- **HeaderGuard grades itself an A**: the dashboard sends HSTS, a strict CSP with no inline scripts, `X-Frame-Options: DENY`, `nosniff`, Referrer-Policy and Permissions-Policy, and a test checks it passes its own rules
 
 Known limitation: DNS is resolved once for the check and again for the connection, so a DNS-rebinding attacker could in theory switch addresses in between. Pinning the connection to the vetted IP would close this gap.
 
@@ -106,9 +119,9 @@ Grades: **A** 90+, **B** 75+, **C** 60+, **D** 45+, **E** 30+, **F** below 30.
 ## 🧰 Tech stack
 
 - Python 3.10+, standard library only (`urllib`, `ssl`, `argparse`)
-- `pytest` (80 offline tests) and GitHub Actions CI
+- `pytest` (122 offline tests) and GitHub Actions CI
 - FastAPI + uvicorn for the web API
-- (coming soon) HTML/CSS/JS dashboard
+- Vanilla HTML, CSS and JavaScript dashboard (no build step, no frameworks)
 
 ## 📚 References
 
