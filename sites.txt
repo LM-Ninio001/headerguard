@@ -1,0 +1,27 @@
+# Sites scanned daily for the live demo on GitHub Pages.
+# One per line. HeaderGuard only makes one normal page request and one TLS
+# handshake per site, the same as a browser visiting the home page.
+
+# Universities
+cqu.edu.au
+sydney.edu.au
+unsw.edu.au
+
+# Government
+service.nsw.gov.au
+cyber.gov.au
+
+# Banks
+commbank.com.au
+nab.com.au
+
+# Tech
+github.com
+google.com
+cloudflare.com
+mozilla.org
+wikipedia.org
+
+# Security community
+owasp.org
+python.org
