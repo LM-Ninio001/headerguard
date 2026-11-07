@@ -1,5 +1,9 @@
 # 🛡️ HeaderGuard
 
+[![tests](https://github.com/LM-Ninio001/headerguard/actions/workflows/tests.yml/badge.svg)](https://github.com/LM-Ninio001/headerguard/actions/workflows/tests.yml)
+![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 **HeaderGuard** is a web security auditor that checks how well a website is protected by its HTTP security headers, TLS (HTTPS) setup and cookie settings, then gives it a grade from **A to F** with plain-English explanations and fixes.
 
 > ⚠️ HeaderGuard is a **passive** tool. It only reads the same response any normal browser receives. It does not attack, probe or exploit anything.
@@ -12,7 +16,7 @@
 - [x] Cookie flag analysis (`Secure`, `HttpOnly`, `SameSite`)
 - [x] CLI with JSON and HTML report output
 - [ ] Visual web dashboard (grade badge, score gauge, header cards)
-- [ ] Automated tests and CI with GitHub Actions
+- [x] Automated tests and CI with GitHub Actions
 
 ## 🔍 What it checks
 
@@ -79,7 +83,8 @@ Grades: **A** 90+, **B** 75+, **C** 60+, **D** 45+, **E** 30+, **F** below 30.
 ## 🧰 Tech stack
 
 - Python 3.10+, standard library only (`urllib`, `ssl`, `argparse`)
-- (coming soon) `pytest`, FastAPI, HTML/CSS/JS dashboard
+- `pytest` (80 offline tests) and GitHub Actions CI
+- (coming soon) FastAPI, HTML/CSS/JS dashboard
 
 ## 📚 References
 
