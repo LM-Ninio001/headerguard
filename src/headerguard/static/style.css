@@ -120,6 +120,44 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .toggle { display: flex; gap: 8px; align-items: center; cursor: pointer; color: var(--ink-soft); }
 .toggle input { width: 18px; height: 18px; accent-color: var(--steel); }
 
+.demo-panel {
+  margin-top: 24px;
+  padding: 18px 20px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  background: var(--panel);
+}
+.demo-panel p { margin: 0 0 12px; color: var(--ink-soft); max-width: 46rem; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.chip {
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-stretch: 100%;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+.chip .g {
+  display: inline-grid;
+  place-items: center;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  font-weight: 800;
+  font-size: 0.8rem;
+  color: var(--panel);
+  background: var(--g, var(--steel));
+}
+.file-pick { display: grid; gap: 6px; font-size: 0.92rem; font-weight: 600; }
+.file-pick input { font: inherit; font-size: 0.9rem; color: var(--ink-soft); max-width: 100%; }
+.demo-panel .hint { margin: 8px 0 0; font-size: 0.85rem; }
+.demo-panel code { background: var(--paper); padding: 1px 6px; border-radius: 4px; overflow-wrap: anywhere; }
+
 .status { min-height: 1.5em; margin: 16px 0 0; color: var(--ink-soft); }
 .status.error { color: var(--fail); font-weight: 600; }
 

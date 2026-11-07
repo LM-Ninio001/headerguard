@@ -8,13 +8,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&display=swap">
-<link rel="stylesheet" href="/static/style.css">
-<script src="/static/app.js" defer></script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'">
+<link rel="stylesheet" href="static/style.css">
+<script src="static/app.js" defer></script>
 </head>
 <body>
 <header class="masthead">
   <a class="brand" href="/">HeaderGuard</a>
-  <a class="api-link" href="/docs">API docs</a>
+  <a class="api-link" id="top-link" href="docs">API docs</a>
 </header>
 
 <main>
@@ -42,6 +43,16 @@
       </label>
     </div>
   </form>
+
+  <section id="demo-panel" class="demo-panel" hidden>
+    <p id="demo-note"></p>
+    <div id="site-chips" class="chips"></div>
+    <label class="file-pick">
+      <span>Or open a report from your own scan</span>
+      <input type="file" id="report-file" accept="application/json,.json">
+    </label>
+    <p class="hint">Create one with <code>headerguard yoursite.com --json &gt; report.json</code></p>
+  </section>
 
   <p id="status" class="status" role="status" aria-live="polite"></p>
 

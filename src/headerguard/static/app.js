@@ -16,8 +16,39 @@ function el(tag, props = {}, ...children) {
   return node;
 }
 
+// On GitHub Pages there is no server, so the page shows reports produced by the
+// scheduled scan workflow (data/index.json). Locally it calls the live API.
+let DEMO = null;
+const REPO_URL = "https://github.com/LM-Ninio001/headerguard";
+
+function hostOf(input) {
+  const text = input.trim().toLowerCase();
+  try {
+    return new URL(text.includes("://") ? text : `https://${text}`).hostname.replace(/^www\./, "");
+  } catch {
+    return text;
+  }
+}
+
+async function loadDemoReport(url) {
+  const host = hostOf(url);
+  const site = DEMO.sites.find(s => s.host === host || s.host.replace(/^www\./, "") === host);
+  if (!site) {
+    throw new Error(`${url} isn't in this demo's daily scan list. Pick one of the sites above, or install HeaderGuard to scan any site.`);
+  }
+  const res = await fetch(`data/${encodeURIComponent(site.file)}`);
+  if (!res.ok) throw new Error(`The saved report for ${site.host} could not be loaded.`);
+  return res.json();
+}
+
+function isReport(data) {
+  return data && typeof data === "object" && data.grade && typeof data.grade.score === "number"
+    && /^[A-F]$/.test(data.grade.letter) && Array.isArray(data.findings) && typeof data.final_url === "string";
+}
+
 async function scan(url) {
-  const res = await fetch("/api/scan", {
+  if (DEMO) return loadDemoReport(url);
+  const res = await fetch("api/scan", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ url }),
@@ -99,6 +130,7 @@ function renderFinding(f) {
 function renderReport(report) {
   const node = $("#result-tpl").content.firstElementChild.cloneNode(true);
   const g = report.grade;
+  report = { ...report, findings: report.findings.filter(f => f && f.status in STATUS_LABEL) };
   node.style.setProperty("--grade-colour", `var(${GRADE_COLOURS[g.letter] || "--steel"})`);
   node.setAttribute("aria-label", `${report.final_url}: grade ${g.letter}, ${g.score} out of 100`);
 
@@ -145,7 +177,8 @@ async function onSubmit(event) {
   const button = $("#scan-btn");
   const results = $("#results");
   button.disabled = true;
-  setStatus(urls.length > 1 ? `Scanning ${urls.join(" and ")}…` : `Scanning ${urls[0]}…`);
+  const verb = DEMO ? "Loading" : "Scanning";
+  setStatus(urls.length > 1 ? `${verb} ${urls.join(" and ")}…` : `${verb} ${urls[0]}…`);
 
   const outcomes = await Promise.allSettled(urls.map(scan));
   button.disabled = false;
@@ -173,7 +206,82 @@ async function onSubmit(event) {
   if (errors.length) setStatus(errors.join(" "), true);
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function showReports(reports) {
+  const results = $("#results");
+  results.replaceChildren(...reports.map(renderReport));
+  results.classList.toggle("compare", reports.length > 1);
+}
+
+async function onReportFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!isReport(data)) throw new Error("not a report");
+    $("#compare-toggle").checked = false;
+    $("#field-b").hidden = true;
+    showReports([data]);
+    setStatus(`Opened report for ${new URL(data.final_url).host}: grade ${data.grade.letter}.`);
+  } catch {
+    setStatus(`${file.name} isn't a HeaderGuard report. Create one with: headerguard yoursite.com --json > report.json`, true);
+  }
+}
+
+function onChip(host) {
+  const a = $("#url-a"), b = $("#url-b");
+  if (!$("#compare-toggle").checked) {
+    a.value = host;
+    $("#scan-form").requestSubmit();
+    return;
+  }
+  // Compare mode: the first pick fills "Website", the second fills "Compare with".
+  if (!a.value.trim() || b.value.trim()) {
+    a.value = host;
+    b.value = "";
+    setStatus(`Now pick a site to compare with ${host}.`);
+  } else if (hostOf(a.value) === host) {
+    setStatus(`${host} is already selected. Pick a different site to compare with.`);
+  } else {
+    b.value = host;
+    $("#scan-form").requestSubmit();
+  }
+}
+
+async function detectDemo() {
+  try {
+    const res = await fetch("data/index.json", { cache: "no-store" });
+    if (!res.ok) return;
+    const index = await res.json();
+    if (!Array.isArray(index.sites) || !index.sites.length) return;
+    DEMO = index;
+  } catch {
+    return;
+  }
+  const when = new Date(DEMO.generated_at);
+  $("#demo-note").textContent =
+    `This online demo shows real results from HeaderGuard's daily scan, last run ${when.toLocaleDateString()} ` +
+    `at ${when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. Pick a site, or tick "Compare two sites" and pick two. ` +
+    `To scan any site you like, install HeaderGuard from GitHub.`;
+  const chips = $("#site-chips");
+  for (const site of [...DEMO.sites].sort((x, y) => y.score - x.score)) {
+    const chip = el("button", { type: "button", className: "chip" });
+    chip.setAttribute("aria-label", `${site.host}, grade ${site.letter}`);
+    const badge = el("span", { className: "g", textContent: site.letter });
+    badge.style.setProperty("--g", `var(${GRADE_COLOURS[site.letter] || "--steel"})`);
+    chip.append(badge, site.host);
+    chip.addEventListener("click", () => onChip(site.host));
+    chips.append(chip);
+  }
+  $("#demo-panel").hidden = false;
+  $("#scan-btn").textContent = "Show results";
+  const top = $("#top-link");
+  top.href = REPO_URL;
+  top.textContent = "Source on GitHub";
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+  await detectDemo();
+  $("#report-file").addEventListener("change", onReportFile);
   $("#scan-form").addEventListener("submit", onSubmit);
   $("#compare-toggle").addEventListener("change", (e) => {
     $("#field-b").hidden = !e.target.checked;
