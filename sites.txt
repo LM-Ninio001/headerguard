@@ -4,6 +4,7 @@
 
 # Friends
 raigonpawa.dev
+ruxchipher.com
 
 # Universities
 cqu.edu.au
