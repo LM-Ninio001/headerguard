@@ -2,6 +2,9 @@
 # One per line. HeaderGuard only makes one normal page request and one TLS
 # handshake per site, the same as a browser visiting the home page.
 
+# Friends
+raigonpawa.dev
+
 # Universities
 cqu.edu.au
 sydney.edu.au
