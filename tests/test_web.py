@@ -110,3 +110,12 @@ def test_dashboard_js_never_uses_innerhtml():
 
 def test_docs_still_load(client):
     assert client.get("/docs").status_code == 200
+
+
+def test_cors_allows_github_pages_only(client):
+    headers = {"Access-Control-Request-Method": "POST", "Access-Control-Request-Headers": "content-type"}
+    ok = client.options("/api/scan", headers={**headers, "Origin": "https://lm-ninio001.github.io"})
+    assert ok.headers.get("access-control-allow-origin") == "https://lm-ninio001.github.io"
+    assert "access-control-allow-credentials" not in ok.headers
+    evil = client.options("/api/scan", headers={**headers, "Origin": "https://evil.example"})
+    assert "access-control-allow-origin" not in evil.headers

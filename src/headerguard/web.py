@@ -14,6 +14,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -31,6 +32,22 @@ app = FastAPI(
     title="HeaderGuard",
     version=__version__,
     description="Passively grade a website's security headers, TLS and cookies.",
+)
+
+# Let the GitHub Pages dashboard call this API from the browser. Only the listed
+# origins are allowed, and no cookies or credentials are ever accepted.
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("HEADERGUARD_CORS_ORIGINS", "https://lm-ninio001.github.io").split(",")
+    if origin.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+    allow_credentials=False,
+    max_age=600,
 )
 
 
