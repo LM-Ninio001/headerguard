@@ -29,6 +29,10 @@ jobs:
       - name: Install
         run: pip install .
       - name: Scan sites and build the demo
+        env:
+          # The hosted API (see render.yaml) that lets visitors scan any site.
+          # Leave empty to publish the daily-scan demo only.
+          HEADERGUARD_API_URL: ""
         run: python -m headerguard.site sites.txt _site
       - uses: actions/upload-pages-artifact@v3
         with:

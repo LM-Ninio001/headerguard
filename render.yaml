@@ -1,0 +1,20 @@
+# Render Blueprint: hosts the HeaderGuard API so the GitHub Pages dashboard can
+# scan any site live. Create it at https://dashboard.render.com/blueprints.
+services:
+  - type: web
+    name: headerguard
+    runtime: python
+    plan: free
+    buildCommand: pip install ".[web]"
+    # Render sits behind a proxy, so trust its X-Forwarded-For header for the
+    # per-client rate limit.
+    startCommand: uvicorn headerguard.web:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips '*'
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: HEADERGUARD_CORS_ORIGINS
+        value: https://lm-ninio001.github.io
+      - key: HEADERGUARD_RATE_LIMIT
+        value: "10"
