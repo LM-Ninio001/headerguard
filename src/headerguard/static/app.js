@@ -30,9 +30,13 @@ function hostOf(input) {
   }
 }
 
-async function loadDemoReport(url) {
+function demoSite(url) {
   const host = hostOf(url);
-  const site = DEMO.sites.find(s => s.host === host || s.host.replace(/^www\./, "") === host);
+  return DEMO.sites.find(s => s.host === host || s.host.replace(/^www\./, "") === host);
+}
+
+async function loadDemoReport(url) {
+  const site = demoSite(url);
   if (!site) {
     throw new Error(`${url} isn't in this demo's daily scan list. Pick one of the sites above, or install HeaderGuard to scan any site.`);
   }
@@ -47,12 +51,20 @@ function isReport(data) {
 }
 
 async function scan(url) {
-  if (DEMO) return loadDemoReport(url);
-  const res = await fetch("api/scan", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ url }),
-  });
+  // Daily-scanned sites load instantly from saved reports; anything else needs
+  // the live API (hosted separately when the page itself is on GitHub Pages).
+  if (DEMO && (demoSite(url) || !DEMO.api_url)) return loadDemoReport(url);
+  const endpoint = DEMO ? `${DEMO.api_url.replace(/\/$/, "")}/api/scan` : "api/scan";
+  let res;
+  try {
+    res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url }),
+    });
+  } catch {
+    throw new Error(`${url}: the scanning server could not be reached. Try again in a minute.`);
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const detail = typeof data.detail === "string" ? data.detail : "Enter a website address, like example.com.";
@@ -177,8 +189,10 @@ async function onSubmit(event) {
   const button = $("#scan-btn");
   const results = $("#results");
   button.disabled = true;
-  const verb = DEMO ? "Loading" : "Scanning";
-  setStatus(urls.length > 1 ? `${verb} ${urls.join(" and ")}…` : `${verb} ${urls[0]}…`);
+  const live = !DEMO || urls.some(u => !demoSite(u));
+  const verb = live ? "Scanning" : "Loading";
+  const wake = DEMO && DEMO.api_url && live ? " The first live scan can take up to a minute while the server wakes up." : "";
+  setStatus((urls.length > 1 ? `${verb} ${urls.join(" and ")}…` : `${verb} ${urls[0]}…`) + wake);
 
   const outcomes = await Promise.allSettled(urls.map(scan));
   button.disabled = false;
@@ -258,10 +272,12 @@ async function detectDemo() {
     return;
   }
   const when = new Date(DEMO.generated_at);
-  $("#demo-note").textContent =
-    `This online demo shows real results from HeaderGuard's daily scan, last run ${when.toLocaleDateString()} ` +
-    `at ${when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}. Pick a site, or tick "Compare two sites" and pick two. ` +
-    `To scan any site you like, install HeaderGuard from GitHub.`;
+  const lastRun = `${when.toLocaleDateString()} at ${when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  $("#demo-note").textContent = DEMO.api_url
+    ? `Type any website above and scan it live, or pick one of these sites from the daily scan (last run ${lastRun}). ` +
+      `Tick "Compare two sites" to put two side by side.`
+    : `This online demo shows real results from HeaderGuard's daily scan, last run ${lastRun}. ` +
+      `Pick a site, or tick "Compare two sites" and pick two. To scan any site you like, install HeaderGuard from GitHub.`;
   const chips = $("#site-chips");
   for (const site of [...DEMO.sites].sort((x, y) => y.score - x.score)) {
     const chip = el("button", { type: "button", className: "chip" });
@@ -273,7 +289,7 @@ async function detectDemo() {
     chips.append(chip);
   }
   $("#demo-panel").hidden = false;
-  $("#scan-btn").textContent = "Show results";
+  if (!DEMO.api_url) $("#scan-btn").textContent = "Show results";
   const top = $("#top-link");
   top.href = REPO_URL;
   top.textContent = "Source on GitHub";

@@ -38,3 +38,27 @@ def test_build_writes_reports_index_and_dashboard(tmp_path):
     assert (tmp_path / "index.html").exists()
     assert (tmp_path / "static" / "app.js").exists()
     assert (tmp_path / ".nojekyll").exists()
+
+
+def test_api_origin_validation():
+    import pytest
+
+    from headerguard.site import api_origin
+
+    assert api_origin("https://headerguard.onrender.com/") == "https://headerguard.onrender.com"
+    for bad in ("http://insecure.example", "https://x.example/api", "javascript:alert(1)", "https://x.example/?a=1"):
+        with pytest.raises(ValueError):
+            api_origin(bad)
+
+
+def test_build_with_api_url_allows_only_that_origin(tmp_path):
+    index = build(["a.example"], tmp_path, scanner=fake_scanner, api_url="https://hg.onrender.com")
+    assert index["api_url"] == "https://hg.onrender.com"
+    page = (tmp_path / "index.html").read_text(encoding="utf-8")
+    assert "connect-src 'self' https://hg.onrender.com;" in page
+
+
+def test_build_without_api_url_keeps_strict_csp(tmp_path):
+    index = build(["a.example"], tmp_path, scanner=fake_scanner)
+    assert "api_url" not in index
+    assert "connect-src 'self';" in (tmp_path / "index.html").read_text(encoding="utf-8")
